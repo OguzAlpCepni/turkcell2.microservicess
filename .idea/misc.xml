@@ -16,7 +16,6 @@
     </option>
     <option name="ignoredFiles">
       <set>
-        <option value="$PROJECT_DIR$/common/pom.xml" />
         <option value="$PROJECT_DIR$/turkcell-t2/pom.xml" />
       </set>
     </option>
