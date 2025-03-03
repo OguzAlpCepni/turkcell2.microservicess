@@ -7,6 +7,6 @@ COPY . /app/
 RUN mvn clean package -DskipTests
 # -----------------------------------
 FROM eclipse-temurin:21-jdk
-COPY --from=build /app/target/order-service-0.0.1-SNAPSHOT.jar /app/order-service.jar
+COPY --from=build /app/target/config-server-0.0.1-SNAPSHOT.jar /app/config-server.jar
 
-ENTRYPOINT ["java", "-jar", "/app/order-service.jar"]
+ENTRYPOINT ["java", "-jar", "/app/config-server.jar"]

@@ -1,7 +1,7 @@
 services:
   pg-1:
     image: postgres
-    container_name: "pg-1"
+    container_name: "pg-31"
     ports:
       - "5435:5432"
     environment:
@@ -12,7 +12,7 @@ services:
       - pg1_data:/var/lib/postgresql/data
   pg-2:
     image: postgres
-    container_name: "pg-2"
+    container_name: "pg-32"
     ports:
       - "5436:5432"
     environment:
@@ -31,7 +31,7 @@ services:
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://kafka:9094
       - KAFKA_BROKER_ID=1
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@127.0.0.1:9093
       - ALLOW_PLAINTEXT_LISTENER=yes
@@ -39,11 +39,57 @@ services:
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
       - BITNAMI_DEBUG=yes
       - KAFKA_CFG_NUM_PARTITIONS=2
+
+  discovery-service:
+    image: turkcell-discovery-server
+    container_name: discovery-service
+    ports:
+      - "8888:8888"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://discovery-service:8888/eureka/"
+
+  config-server:
+    image: turkcell-config-server
+    container_name: config-server
+    restart: always
+    ports:
+      - "8079:8079"
+    healthcheck:
+      test: ["CMD","curl","-f","http://localhost:8079/actuator/health"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 5s
+
+  order-service:
+    image: turkcell-order-service
+    container_name: order_service
+    depends_on:
+      config-server:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      #SPRING_APPLICATION_NAME: order-service
+      #SPRING_DATASOURCE_URL: jdbc:postgresql://pg-1:5432/order-service
+      #EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8888/eureka/
+      #SPRING_CLOUD_STREAM_KAFKA_BİNDER_BROKERS: kafka:9092
+      SPRING_APPLICATION_NAME: "orderservice"
+      SPRING_CLOUD_CONFIG_PROFILE: dev
+      CONFIGURL: "http://config-server:8079"
+
+  cart-service:
+    image: turkcell-cart-service
+    container_name: cart-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_APPLICATION_NAME: cart-service
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8888/eureka/
+      SPRING_CLOUD_STREAM_KAFKA_BINDER_BROKERS: kafka:9092
+
 volumes:
   pg1_data:
   pg2_data:
 
 
-# MQ sistemleri hakkında ve kafka hakkında bir medium yazısı oluşturmak.
-
-# Projedeki servicelerin bağımsız ER diagramlarını oluşturalım. (PAİR)
